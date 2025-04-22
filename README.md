@@ -1,4 +1,4 @@
-# 📝 Resuminator – Online Resume Editor
+# 📝 Resuminator – Online Resume Generator
 
 Create, customize, and export beautiful resumes with ease.
 
