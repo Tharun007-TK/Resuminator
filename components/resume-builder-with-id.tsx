@@ -11,7 +11,7 @@ import { ArrowLeft } from "lucide-react"
 import type { ResumeData, Template } from "@/lib/types"
 import { SaveResumeDialog } from "@/components/save-resume-dialog"
 import { useRouter } from "next/navigation"
-import { createClientSupabaseClient } from "@/lib/supabase/client"
+import { getSupabaseClient } from "@/lib/supabase/supabaseClient"
 import { AuthButton } from "@/components/auth/auth-button"
 import Link from "next/link"
 
@@ -52,26 +52,28 @@ export function ResumeBuilder({
     }
 
     // Finally, fall back to the initial data
-    return {
-      personalInfo: {
-        name: "",
-        title: "",
-        email: "",
-        phone: "",
-        location: "",
-        website: "",
-        linkedin: "",
-        summary: "",
-      },
-      education: [],
-      experience: [],
-      projects: [],
-      skills: {
-        categories: [],
-        skillsByCategory: {},
-        otherSkills: "",
-      },
-    }
+    return (
+      initialResumeData || {
+        personalInfo: {
+          name: "",
+          title: "",
+          email: "",
+          phone: "",
+          location: "",
+          website: "",
+          linkedin: "",
+          summary: "",
+        },
+        education: [],
+        experience: [],
+        projects: [],
+        skills: {
+          categories: [],
+          skillsByCategory: {},
+          otherSkills: "",
+        },
+      }
+    )
   })
   const [selectedTemplate, setSelectedTemplate] = useState<Template>(initialTemplate)
   const [isMobileView, setIsMobileView] = useState(false)
@@ -89,14 +91,28 @@ export function ResumeBuilder({
 
     // Get current user
     const fetchUser = async () => {
-      const supabase = createClientSupabaseClient()
+      const supabase = getSupabaseClient()
       const { data } = await supabase.auth.getUser()
       setUser(data.user)
+
+      // Set up auth state change listener
+      const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+        setUser(session?.user || null)
+      })
+
+      return () => {
+        authListener.subscription.unsubscribe()
+      }
     }
 
-    fetchUser()
+    const unsubscribe = fetchUser()
 
-    return () => window.removeEventListener("resize", handleResize)
+    return () => {
+      window.removeEventListener("resize", handleResize)
+      if (typeof unsubscribe === "function") {
+        unsubscribe()
+      }
+    }
   }, [])
 
   // Save data to localStorage whenever it changes

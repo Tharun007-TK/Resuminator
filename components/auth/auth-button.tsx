@@ -1,9 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { LogIn, LogOut, User } from "lucide-react"
+import { LogIn, LogOut, User, UserPlus } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +12,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useRouter } from "next/navigation"
+import { getSupabaseClient } from "@/lib/supabase/supabaseClient"
+import Link from "next/link"
 
 interface AuthButtonProps {
   user: any | null
@@ -21,27 +22,11 @@ interface AuthButtonProps {
 export function AuthButton({ user }: AuthButtonProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
-  const supabase = createClientSupabaseClient()
-
-  const handleSignIn = async () => {
-    setIsLoading(true)
-    try {
-      await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/api/auth/callback`,
-        },
-      })
-    } catch (error) {
-      console.error("Error signing in:", error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
   const handleSignOut = async () => {
     setIsLoading(true)
     try {
+      const supabase = getSupabaseClient()
       await supabase.auth.signOut()
       router.refresh()
     } catch (error) {
@@ -53,10 +38,20 @@ export function AuthButton({ user }: AuthButtonProps) {
 
   if (!user) {
     return (
-      <Button onClick={handleSignIn} disabled={isLoading} variant="outline" className="flex items-center gap-2">
-        <LogIn className="h-4 w-4" />
-        {isLoading ? "Loading..." : "Sign In"}
-      </Button>
+      <div className="flex gap-2">
+        <Button asChild variant="outline" size="sm" className="flex items-center gap-1">
+          <Link href="/auth">
+            <LogIn className="h-4 w-4" />
+            <span className="hidden sm:inline">Login</span>
+          </Link>
+        </Button>
+        <Button asChild size="sm" className="flex items-center gap-1">
+          <Link href="/auth?tab=signup">
+            <UserPlus className="h-4 w-4" />
+            <span className="hidden sm:inline">Sign Up</span>
+          </Link>
+        </Button>
+      </div>
     )
   }
 
